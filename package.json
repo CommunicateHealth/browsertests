@@ -1,0 +1,22 @@
+{
+  "name": "@communicatehealth/browsertests",
+  "version": "0.0.1",
+  "description": "Testing framework for testing Drupal sites using Selenium",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CommunicateHealth/browsertests.git"
+  },
+  "author": "@communicatehealth",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/CommunicateHealth/browsertests/issues"
+  },
+  "homepage": "https://github.com/CommunicateHealth/browsertests#readme",
+  "dependencies": {
+    "selenium-webdriver": "^4.8.2"
+  }
+}
