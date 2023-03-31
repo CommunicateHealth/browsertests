@@ -99,7 +99,6 @@ function resolveTests(options) {
         } else {
           return;
         }
-        console.log("testSpec", test.testSpec);
         if (!options.help && (test.testSpec && test.testSpec.require)) {
           if (!checkOptionsIncluded(test.testSpec.require, options, true)) {
             return;
