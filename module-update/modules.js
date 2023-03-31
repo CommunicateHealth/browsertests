@@ -6,10 +6,6 @@
 module.exports.test = function(options, webdriver, driver, baseUrl) {
 
   const By = webdriver.By,
-        actions = driver.actions(),
-        until = webdriver.until,
-        config = require('../config.js'),
-        test_utils = require('../test-utils.js'),
         path = "/admin/modules"
         moduleList = [];
 
@@ -40,8 +36,8 @@ module.exports.test = function(options, webdriver, driver, baseUrl) {
           })
       }, Promise.resolve());
     })
-    
- 
+
+
     .then(() => console.log("Modules listed."))
     .then(() => {
       return moduleList;

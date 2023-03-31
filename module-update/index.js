@@ -11,7 +11,18 @@
 
 const { syncBuiltinESMExports } = require('module');
 
-module.exports.testSpecs = {require: ["loginUser", "loginPass"]};
+module.exports.testSpec = {require: ["loginUser", "loginPass"]};
+
+module.exports.help = function(options) {
+  console.log("  --modules=mod_1,mod_2,mod_etc to test specific modules");
+  console.log("  --core=#.#[].#] to test that the core version matches the specified version");
+  console.log("  --php=#.#[.#] to test that the php version matches the specified version");
+  console.log("  Required: --loginUser=[Drupal login username]")
+  console.log("  Required: --loginPass=[Drupal login password]")
+  console.log("  - Available modules:");
+  tests = resolveTests(options);
+  tests.forEach(test => console.log("    - " + test.name));
+}
 
 module.exports.test = function (options, webdriver, driver, baseUrl) {
   const By = webdriver.By,
@@ -34,7 +45,7 @@ module.exports.test = function (options, webdriver, driver, baseUrl) {
       var promise = Promise.resolve();
       tests.forEach((test) => {
         promise = promise
-          .then(() => test.test(options, webdriver, driver, baseUrl))
+          .then(() => test.exec.test(options, webdriver, driver, baseUrl))
           .then(() => dblog.test(options, webdriver, driver, baseUrl));
       });
       return promise;
@@ -44,7 +55,7 @@ module.exports.test = function (options, webdriver, driver, baseUrl) {
 function resolveTests(options) {
   const fs = require('fs');
   var files = fs.readdirSync(__dirname),
-    allowedTests = options.moduleList,
+    allowedTests = options.moduleList || [],
     tests = [];
   if (options.core || options.php) {
     tests.push(require("./core_status.js"))
@@ -61,7 +72,7 @@ function resolveTests(options) {
         allowedTests.length == 0 ||
         allowedTests.some((allowedTest) => filenameBase === allowedTest)
       ) {
-        tests.push(require("./" + fileName));
+        tests.push({name:filenameBase, exec:require("./" + fileName)});
       }
     }
   });

@@ -167,6 +167,13 @@ module.exports.process_options = function(args, config) {
       if (optName.length > 0) {
         options[optName] = argParts.splice(1).join("=");
       }
+    } else if (arg.indexOf("-") === 0) {
+      while (arg.indexOf("-") === 0) {
+        arg = arg.substr(1);
+      }
+      if (arg.length > 0) {
+        options[arg] = true;
+      }
     } else if (argParts.length == 1) {
       // Deal with parameters
       ++parameterIndex;
@@ -338,5 +345,44 @@ module.exports.waitForTitle = function (driver, interval, tries) {
           .then(() => module.exports.waitForTitle(driver, interval, tries - 1));
       }
       return !!title;
+    });
+}
+
+// Read (optionally nested) sitemap.xml file(s)
+module.exports.readSitemap = function (webdriver, driver, baseUrl, path = '/sitemap.xml') {
+  const test_utils = require('./test-utils'),
+    xmlRegex = /<loc>([^<]+)<\/loc>[\s\S]*?<lastmod>([^<]+)<\/lastmod>/gi;
+  var mapEntries = [];
+  // Load the page, which either contains a sitemapindex section or a urlset section
+  return test_utils.httpGet(baseUrl + path)
+    .then((xmlBuffer) => {
+      var xml = xmlBuffer.toString('utf-8'),
+        entryNum = 1;
+      var indexSection = xml.match(/<sitemapindex[^>]+>[\s\S]*<\/sitemapindex>/g);
+      if (indexSection) {
+        var promise = Promise.resolve();
+        while ((match = xmlRegex.exec(indexSection[0])) !== null) {
+          let subUrl = new URL(match[1]),
+            subPath = subUrl.pathname + subUrl.search + subUrl.hash;
+          promise = promise.then(() => module.exports.readSitemap(webdriver, driver, baseUrl, subPath))
+            .then((_mapEntries) => mapEntries = mapEntries.concat(_mapEntries));
+        }
+        return promise.then(() => {
+          return mapEntries;
+        });
+      }
+      var urlSetSection = xml.match(/<urlset[^>]+>[\s\S]*<\/urlset>/g);
+      if (urlSetSection) {
+        while ((match = xmlRegex.exec(urlSetSection[0])) !== null) {
+          let mapEntry = {
+            path: (new URL(match[1])).pathname,
+            date: new Date(match[2]),
+            type: "#" + entryNum
+          };
+          ++entryNum;
+          mapEntries.push(mapEntry);
+        }
+      }
+      return mapEntries;
     });
 }

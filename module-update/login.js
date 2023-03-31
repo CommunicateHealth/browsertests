@@ -8,7 +8,7 @@ module.exports.test = function(options, webdriver, driver, baseUrl) {
   const By = webdriver.By,
         actions = driver.actions(),
         until = webdriver.until,
-        config = require('../config.js'),
+        config = require(process.env.PWD + '/browser-tests/config.js'),
         test_utils = require('../test-utils.js'),
         loginUser = options.loginUser,
         loginPass = options.loginPass,
@@ -19,9 +19,9 @@ module.exports.test = function(options, webdriver, driver, baseUrl) {
         filepath = require('path').resolve(process.cwd() + relPath);
 
   if (!loginUser || !loginPass) {
-    return new Promise((resolve, reject) => reject('Error: Need to specify a user and password for these tests!'));
+    return new Promise((resolve, reject) => reject('Error: Need to specify --loginUser=[username] --loginPass=[password] for these tests!'));
   }
-  
+
   // Load the page
   console.log("Opening login page at " + options.url + path);
   return driver.get(baseUrl + path)

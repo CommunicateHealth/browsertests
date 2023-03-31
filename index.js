@@ -3,11 +3,11 @@
  * For notes on webdriver, see https://www.selenium.dev/selenium/docs/api/javascript/module/selenium-webdriver/.
  */
 
-const { test } = require('./module-update/login.js');
+const { Console } = require('console');
 
 const webdriver = require('selenium-webdriver'),
   test_utils = require('./test-utils.js'),
-  config = require('../browser-tests/config.js'),
+  config = require(process.env.PWD + '/browser-tests/config.js'),
   options = test_utils.process_options(process.argv, config),
   baseUrl = options.baseUrl,
   logging = webdriver.logging,
@@ -21,7 +21,12 @@ const webdriver = require('selenium-webdriver'),
     .build(),
   tests = resolveTests(options);
 
-console.log('Testing site: ' + options.url)
+if (options.help) {
+  showHelp(tests, options);
+  return;
+}
+
+console.log('Testing site: ' + options.url + "\n")
 
 // Set the window size
 driver.manage().window().setRect({height:768,width:1024})
@@ -31,10 +36,9 @@ driver.manage().window().setRect({height:768,width:1024})
     return tests.reduce((promise, test) => {
       return promise
         .then(() => {
-          console.log("Testing " + test.name);
-          return test.test
-            .test(options, webdriver, driver, baseUrl)
-            .then(() => console.log("Tested " + test.name));
+          console.log("\x1b[32m%s\x1b[0m", "Testing " + test.name);
+          return test.obj
+            .test(options, webdriver, driver, baseUrl);
         })
     }, Promise.resolve());
   })
@@ -57,10 +61,7 @@ driver.manage().window().setRect({height:768,width:1024})
   })
 
 /**
- * Returns tests, looking in this directory and in ../browser-tests
- *
- * @param {*} options
- * @returns
+ * Returns tests, looking in this directory and in [PWD]/browser-tests
  */
 function resolveTests(options) {
   const fs = require('fs'),
@@ -69,7 +70,7 @@ function resolveTests(options) {
       "test-utils.js",
       "config.js"
     ],
-    dirs = [__dirname, __dirname + "/../browser-tests/"],
+    dirs = [__dirname, process.env.PWD + "/browser-tests"],
     allowedTests = options.tests ? (options.tests).split(',') : [];
   var tests = [];
   dirs.forEach(dir => {
@@ -83,7 +84,7 @@ function resolveTests(options) {
       if (excludeNames.includes(fileName)) {
         return;
       }
-      if (fileName.endsWith(".js")) {
+      if (fileName.endsWith(".js") || fs.lstatSync(dir + "/" + fileName).isDirectory()) {
         filenameBase = fileName.split(".")[0];
         if (
           allowedTests.length > 0 &&
@@ -98,17 +99,18 @@ function resolveTests(options) {
         } else {
           return;
         }
-        if (test.testSpec && test.testSpec.require) {
-          if (!checkOptionsIncluded(testSpec.require, options, true)) {
+        console.log("testSpec", test.testSpec);
+        if (!options.help && (test.testSpec && test.testSpec.require)) {
+          if (!checkOptionsIncluded(test.testSpec.require, options, true)) {
             return;
           }
         }
-        if (test.testSpec && test.testSpec.exclude) {
-          if (checkOptionsIncluded(testSpec.exclude, options, false)) {
+        if (!options.help && (test.testSpec && test.testSpec.exclude)) {
+          if (checkOptionsIncluded(test.testSpec.exclude, options, false)) {
             return;
           }
         }
-        tests.push ({name: filenameBase, test: test});
+        tests.push ({name: filenameBase, obj: test});
       }
     });
   });
@@ -145,4 +147,28 @@ function checkOptionsIncluded(testSet, options, all) {
       return retVal;
     }
   });
+}
+
+function showHelp(tests, options) {
+  console.log("Usage: npm browsertests [parameter] [options]");
+  console.log("Parameter: [sitename or url] (optional, defaults to docksal site)");
+  console.log("Option: --url=[url] specifes base url.");
+  console.log("Option: --tests=test1[,test2][,test3] comma separated list of tests to perform (including front-page), defaults to all tests.");
+  console.log("Option: --debug=[1|2] 1 displays progress of tests in a browser window, 2 keeps window open at end.");
+  console.log("Option: --user=[basic or form login username]")
+  console.log("Option: --pass=[basic or form login password]")
+  console.log("Option: --loginUser=[Drupal login username]")
+  console.log("Option: --loginPass=[Drupal login password]")
+  console.log("Other options may be specified in tests:");
+  tests.forEach((test) => {
+    console.log('- ' + test.name);
+    if (test.obj.help instanceof Function) {
+      test.obj.help(options);
+    } else if (test.obj.help instanceof Array) {
+      test.obj.help.forEach((help) => console.log('  ' + (help.startsWith('-') ? '' : '- ') + help));
+    } else if (test.obj.help) {
+      console.log('  ' + (test.objhelp.startsWith('-') ? '' : '- ') + test.obj.help);
+    }
+  });
+  console.log;
 }

@@ -5,8 +5,7 @@
 
 module.exports.test = function(options, webdriver, driver, baseUrl) {
   const By = webdriver.By,
-        config = require('../config.js'),      
-        sitemap = require('../sitemap.js'),
+        config = require(process.env.PWD + '/browser-tests/config.js'),
         test_utils = require('../test-utils.js'),
         path = '/admin/config/search/simplesitemap';
   var totalItems;
@@ -37,7 +36,7 @@ module.exports.test = function(options, webdriver, driver, baseUrl) {
 
     // Check the generated sitemap
     .then(() => console.log("Reading sitemap.xml"))
-    .then(() => sitemap.readSitemap(webdriver, driver, baseUrl))
+    .then(() => test_utils.readSitemap(webdriver, driver, baseUrl))
     .then((sitemapEntries) => {
       console.log("Got " + sitemapEntries.length + " sitemap.xml entries.")
       if (sitemapEntries.length < config.testParams.minSitemapEntries) {
