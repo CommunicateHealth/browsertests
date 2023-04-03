@@ -3,8 +3,6 @@
  * For notes on webdriver, see https://www.selenium.dev/selenium/docs/api/javascript/module/selenium-webdriver/.
  */
 
-const { Console } = require('console');
-
 const webdriver = require('selenium-webdriver'),
   test_utils = require('./test-utils.js'),
   config = require(process.env.PWD + '/browser-tests/config.js'),
@@ -26,7 +24,8 @@ if (options.help) {
   return;
 }
 
-console.log('Testing site: ' + options.url + "\n")
+console.log("\x1b[32m%s\x1b[0m", 'Testing site: ' + options.url)
+console.log();
 
 // Set the window size
 driver.manage().window().setRect({height:768,width:1024})
@@ -35,11 +34,11 @@ driver.manage().window().setRect({height:768,width:1024})
   .then(() => {
     return tests.reduce((promise, test) => {
       return promise
-        .then(() => {
-          console.log("\x1b[32m%s\x1b[0m", "Testing " + test.name);
-          return test.obj
-            .test(options, webdriver, driver, baseUrl);
-        })
+        .then(() => console.log("\x1b[32m%s\x1b[0m", "Testing " + test.name))
+        // Set the window size
+        .then(() => driver.manage().window().setRect({height:768,width:1280}))
+        // Run the test
+        .then(() => test.obj.test(options, webdriver, driver, baseUrl));
     }, Promise.resolve());
   })
 
@@ -55,7 +54,7 @@ driver.manage().window().setRect({height:768,width:1024})
   // Always run this clean-up code.
   .finally(() => {
     if (!options.debug || options.debug < "2") {
-      console.log("Quitting");
+      console.log("\n\x1b[7m%s\x1b[0m", "Quitting");
       return driver.quit().then(console.log("Quit complete."));
     }
   })

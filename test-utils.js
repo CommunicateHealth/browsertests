@@ -6,7 +6,6 @@ module.exports.checkForErrors = function(webdriver, driver, options) {
     .then(currentUrl => pathname = (new URL(currentUrl)).pathname)
     .then(() => module.exports.checkFor200Response(webdriver, driver, options, pathname))
     .then(() => module.exports.inspectH1(webdriver, driver))
-    .then(() => module.exports.checkForRobots(webdriver, driver, options))
     .then(() => module.exports.checkForGTM(webdriver, driver))
     .then(() => module.exports.checkForConsoleErrors(webdriver, driver, options))
     .then(() => console.log("No errors on path " + pathname));
@@ -43,7 +42,7 @@ module.exports.checkForConsoleErrors = function(webdriver, driver, options) {
 }
 
 module.exports.checkFor200Response = function(webdriver, driver, options, pathname) {
-  return  module.exports.httpGetStatus(options.baseUrl + pathname)
+  return  module.exports.httpGetStatus(webdriver, driver, options, pathname)
     .then((responseCode) => {
       if (responseCode >= 300) return new Promise((_, reject)=>reject("Invalid response code received: " + responseCode));
       console.log("Recieved response code " + responseCode);
@@ -60,43 +59,45 @@ module.exports.inspectH1 = function(webdriver, driver, options) {
     })
 }
 
-module.exports.checkForRobots = function(webdriver, driver, options) {
-  const By = webdriver.By;
-
-  return driver.findElements(By.css("head meta[content='noindex, nofollow'"))
-    .then((elements) => {
-      if (options.baseUrl == "https://www.nei.nih.gov") {
-        if (elements.length != 0) {
-          return new Promise((_, reject)=>reject("Robots noindex, nofollow directive found on production."));
-        }
-        console.log("Robots noindex, nofollow is hidden on production.");
-      }
-      else {
-        if (elements.length != 1) {
-          return new Promise((_, reject)=>reject("Robots directive not found."));
-        }
-        console.log("Robots directive found on non-production site.");
-      }
-    })
-}
-
-module.exports.checkForGTM = function(webdriver, driver) {
-  const By = webdriver.By;
+module.exports.checkForGTM = function(webdriver, driver, options) {
+  const By = webdriver.By,
+        config = require(process.env.PWD + '/browser-tests/config.js');
+  var scriptSelector = '',
+      gotNoScript = false;
+  if (!Array.isArray(config.gtmOptions.scriptSrc)) {
+    config.gtmOptions.scriptSrc = [config.gtmOptions.scriptSrc];
+  }
+  config.gtmOptions.scriptSrc.forEach(scriptSrc => {
+    if (scriptSelector !== '') {
+      scriptSelector += ",";
+    }
+    scriptSelector+='script[src*="'+scriptSrc+'"]';
+  });
+  console.log(scriptSelector);
 
   // Look for GTM Iframe in <noscript> tag
-  return driver.findElement(By.css('noscript'))
-    .then(element => element.getAttribute('innerText'))
-    .then(text => {
-      if(!text.startsWith('<iframe src="https://www.googletagmanager.com/ns.html') || !text.endsWith("</iframe>")) {
+  return driver.findElements(By.css('noscript'))
+    .then((elements) => {
+      return elements.reduce((promise, element) => {
+        return promise.then(() => element.getAttribute('innerText'))
+          .then((text) => gotNoScript |= text.startsWith('<iframe src="https://www.googletagmanager.com/ns.html') && text.endsWith("</iframe>"))
+      }, Promise.resolve());
+    })
+    .then(() => {
+      if(!gotNoScript) {
         return new Promise((_, reject)=>reject('GTM noscript Iframe missing.'));
       }
     })
     .then(() => console.log("GTM noscript Iframe exists."))
 
     // Look for GTM script
-    .then(() => driver.findElement(By.css('script[src^="/sites/default/files/google_tag/google_tag/www.nei.nih.gov/google_tag.script.js"]')))
+    .then(() => driver.findElements(By.css(scriptSelector)))
+    .then((gtmScripts) => {
+      if (gtmScripts.length == 0) {
+        return new Promise((_, reject)=>reject('GTM script missing.'));
+      }
+    })
     .then(() => console.log("GTM script exists."))
-
 }
 
 module.exports.getKeyByValue = function(object, value) {
@@ -104,23 +105,26 @@ module.exports.getKeyByValue = function(object, value) {
 }
 
 // Returs only status code from an http get.
-module.exports.httpGetStatus = function(url) {
+module.exports.httpGetStatus = function(webdriver, driver, options, url) {
   console.log("Trying " + url);
-  return new Promise((resolve, reject) => {
-    const http = require('http'),
-      https = require('https');
 
-    let client = http;
+  return driver.executeScript("selenium_response_code=-1;fetch(new Request('"+url+"')).then((response)=>{selenium_response_code=response.status})")
+    .then(() => waitForStatus(driver, 60))
+}
 
-    if (url.toString().indexOf("https") === 0) {
-      client = https;
-    }
-    client.get(url, (resp) => {
-      resolve(resp.statusCode);
-    }).on("error", (err) => {
-      reject(err);
-    });
-  });
+// Waits for status to be assigned to selenium_response_code JS variable
+function waitForStatus(driver, tries) {
+  return driver.executeScript("return selenium_response_code;")
+    .then ((responseCode) => {
+      if (responseCode !== -1) {
+        return responseCode;
+      }
+      if (tries <= 1) {
+        return 599;
+      }
+      return driver.sleep(500)
+        .then(() => waitForStatus(driver, tries-1))
+    })
 }
 
 // Returs a buffer. Use .toString('utf-8') to get textcod
@@ -199,18 +203,6 @@ module.exports.process_options = function(args, config) {
               });
             });
           }
-          break;
-        case 4:
-          options.user = arg;
-          break;
-        case 5:
-          options.pass = arg;
-          break;
-        case 6:
-          options.loginUser = arg;
-          break;
-        case 7:
-          options.loginPass = arg;
           break;
       }
     }
@@ -338,14 +330,23 @@ module.exports.waitForTitle = function (driver, interval, tries) {
       if (!title && tries > 1) {
         console.log("Waiting for page title to become available...")
         return driver.sleep(interval)
-          /*.then(() => driver.executeScript('return document.title'))
-          .then((doc_title) => console.log("document.title is \"" + doc_title + "\""))
-          .then(() => driver.executeScript('return document.location.href'))
-          .then((doc_loc) => console.log("document.location.href is \"" + doc_loc + "\""))*/
           .then(() => module.exports.waitForTitle(driver, interval, tries - 1));
       }
       return !!title;
     });
+}
+
+// Waits for element to be displayed and enabled
+module.exports.waitForDisplayedAndEnabled = function(driver, element, delay=30000) {
+  return driver.wait(() => {
+    return element.isDisplayed()
+      .then((displayed) => {
+        if (!displayed) {
+            return false;
+        }
+        return element.isEnabled();
+      });
+  }, delay)
 }
 
 // Read (optionally nested) sitemap.xml file(s)
