@@ -21,6 +21,10 @@ module.exports.checkForConsoleErrors = function(webdriver, driver, options) {
         entries.forEach(function(entry) {
           if(!entry.message.includes("Unrecognized feature: 'interest-cohort'")) {
             console.log('[%s] %s', entry.level.name, entry.message);
+            if (typeof options.strict === 'string' && entry.message.match(options.strict)) {
+              console.log("[WARNING] ignored console error matching '" + options.strict + "'");
+              return;
+            }
             if (entry.level.value > 900) {
               gotErrors = true;
             }
