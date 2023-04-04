@@ -157,6 +157,7 @@ function showHelp(tests, options) {
   console.log("Option: --pass=[basic or form login password]")
   console.log("Option: --loginUser=[Drupal login username]")
   console.log("Option: --loginPass=[Drupal login password]")
+  console.log("Option: --strict if set, capture console errors")
   console.log("Other options may be specified in tests:");
   tests.forEach((test) => {
     console.log('- ' + test.name);
