@@ -1,8 +1,12 @@
 # Changelog
 
-## 1.0.3
+## 1.0.5
 
-- Fixed --strict option for checking console errors.
+- Allow `--strict` option to specify a regex of ignored console errors
+
+## 1.0.4
+
+- Fixed `--strict` option for checking console errors.
 
 ## 1.0.3
 
