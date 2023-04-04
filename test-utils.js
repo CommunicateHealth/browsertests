@@ -73,7 +73,6 @@ module.exports.checkForGTM = function(webdriver, driver, options) {
     }
     scriptSelector+='script[src*="'+scriptSrc+'"]';
   });
-  console.log(scriptSelector);
 
   // Look for GTM Iframe in <noscript> tag
   return driver.findElements(By.css('noscript'))
@@ -108,7 +107,9 @@ module.exports.getKeyByValue = function(object, value) {
 module.exports.httpGetStatus = function(webdriver, driver, options, url) {
   console.log("Trying " + url);
 
-  return driver.executeScript("selenium_response_code=-1;fetch(new Request('"+url+"')).then((response)=>{selenium_response_code=response.status})")
+  return driver.executeScript("selenium_response_code=-1;fetch(location.origin+'" +
+      url +
+      "').then((response)=>{selenium_response_code=response.status})")
     .then(() => waitForStatus(driver, 60))
 }
 
