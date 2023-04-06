@@ -1,3 +1,23 @@
+// Load a page, trying a few times if a 403 error is encountered
+module.exports.reloadIf403 = function(webdriver, driver, tries=8, retryWait=10000) {
+  const By = webdriver.By,
+        until = webdriver.until;
+  return driver.wait(until.elementLocated(By.css('body')),30000)
+    .then((body) => driver.executeScript('return arguments[0].innerText', body))
+    .then((bodyText) => {
+      bodyText = bodyText.substr(0,15);
+      if (bodyText.includes("403") || bodyText.includes("Forbidden")) {
+        if (tries > 0) {
+          console.log("Got 403 Forbidden response, reloading...")
+          return driver.sleep(retryWait)
+            .then(() => driver.navigate().refresh())
+            .then(() => module.exports.reloadIf403(webdriver, driver, tries - 1, retryWait))
+        }
+        return new Promise((_, reject)=>reject("Error: Too many 403 Forbidden reponses."));
+      }
+    });
+}
+
 // Look for a variety of errors
 module.exports.checkForErrors = function(webdriver, driver, options) {
   var pathname;
