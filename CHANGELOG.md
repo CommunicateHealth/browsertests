@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.6
+
+- Add `test-utils::reloadIf403()` method
+
 ## 1.0.5
 
 - Allow `--strict` option to specify a regex of ignored console errors
