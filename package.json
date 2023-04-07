@@ -1,6 +1,6 @@
 {
   "name": "@communicatehealth/browsertests",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Testing framework for testing Drupal sites using Selenium",
   "main": "index.js",
   "scripts": {
