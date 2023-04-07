@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.7
+
+- Add logout to module tests, always run front_page/front-page test
+
 ## 1.0.6
 
 - Add `test-utils::reloadIf403()` method
