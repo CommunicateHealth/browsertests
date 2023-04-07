@@ -69,9 +69,14 @@ function resolveTests(options) {
       "test-utils.js",
       "config.js"
     ],
-    dirs = [__dirname, process.env.PWD + "/browser-tests"],
-    allowedTests = options.tests ? (options.tests).split(',') : [];
-  var tests = [];
+    dirs = [__dirname, process.env.PWD + "/browser-tests"];
+  var allowedTests = options.tests ? (options.tests).split(',') : [],
+      tests = [];
+
+  if (allowedTests.length > 0) {
+    allowedTests.push('front-page');
+    allowedTests.push('front_page');
+  }
   dirs.forEach(dir => {
     if (!fs.existsSync(dir)) {
       return;
@@ -113,11 +118,13 @@ function resolveTests(options) {
     });
   });
   tests.sort((a,b) => {
-    if (a.name === "front-page" ) {
-      return -1;
-    }
-    if (b.name === "front-page" ) {
-      return 1;
+    if (a.name !== b.name) {
+      if (a.name === "front-page" || a.name === "front_page") {
+        return -1;
+      }
+      if (b.name === "front-page" || b.name === "front_page") {
+        return 1;
+      }
     }
     return a.name.localeCompare(b.name);
   });

@@ -25,10 +25,8 @@ module.exports.help = function(options) {
 }
 
 module.exports.test = function (options, webdriver, driver, baseUrl) {
-  const By = webdriver.By,
-    until = webdriver.until,
-    test_utils = require('../test-utils.js'),
-    login = require('./login.js'),
+  const login = require('./login.js'),
+    logout = require('./logout.js'),
     modules = require('./modules.js'),
     dblog = require('./dblog.js');
   var tests;
@@ -49,7 +47,8 @@ module.exports.test = function (options, webdriver, driver, baseUrl) {
           .then(() => dblog.test(options, webdriver, driver, baseUrl));
       });
       return promise;
-    });
+    })
+    .then(() => logout.test(options, webdriver, driver, baseUrl));
 }
 
 function resolveTests(options) {

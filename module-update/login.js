@@ -1,26 +1,29 @@
 /**
- * Runs front-page tests.  Launched by index.js
- * For notes on webdriver, see https://www.selenium.dev/selenium/docs/api/javascript/module/selenium-webdriver/.
+ * Logs into Drupal.
  */
 
 module.exports.test = function(options, webdriver, driver, baseUrl) {
 
   const By = webdriver.By,
-        actions = driver.actions(),
-        until = webdriver.until,
         config = require(process.env.PWD + '/browser-tests/config.js'),
         test_utils = require('../test-utils.js'),
         loginUser = options.loginUser,
-        loginPass = options.loginPass,
-        path = config.loginOptions.loginPath,
-        loginPageName = config.loginOptions.loginPageName,
-        loggedinPageName = config.loginOptions.loggedinPageName.replace('%loginUser%', loginUser),
-        relPath = '/../../docroot/themes/custom/neimedia/images/homepage_circle_healthyVision.jpg',
-        filepath = require('path').resolve(process.cwd() + relPath);
+        loginPass = options.loginPass;
+
+  var path = "/user/login",
+      loginPageName = "Log in",
+      loggedinPageName = '%loginUser%';
 
   if (!loginUser || !loginPass) {
     return new Promise((resolve, reject) => reject('Error: Need to specify --loginUser=[username] --loginPass=[password] for these tests!'));
   }
+
+  if (config.loginOptions) {
+    path = config.loginOptions.loginPath || path;
+    loginPageName = config.loginOptions.loginPageName || loginPageName;
+    loggedinPageName = config.loginOptions.loggedinPageName || loggedinPageName;
+  }
+  loggedinPageName = loggedinPageName.replace('%loginUser%', loginUser)
 
   // Load the page
   console.log("Opening login page at " + options.url + path);
@@ -30,7 +33,7 @@ module.exports.test = function(options, webdriver, driver, baseUrl) {
     .then(() => driver.getTitle())
     .then(title => {
       console.log("Opened " + title);
-      if(title !== loginPageName) {
+      if(!title.includes(loginPageName)) {
         return new Promise((resolve, reject) => reject('Error: Got wrong title for page at ' + options.url + path + '!'));
       }
     })
@@ -45,7 +48,7 @@ module.exports.test = function(options, webdriver, driver, baseUrl) {
     .then(() => driver.getTitle())
     .then((title) => {
       console.log("Opened " + title);
-      if(title !== loggedinPageName) {
+      if(!title.includes(loggedinPageName)) {
         return new Promise((resolve, reject) => reject('Error: Got wrong title for page after logging in!'));
       }
     })
