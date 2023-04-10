@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.8
+
+- Fix error when running core and php version checks
+
 ## 1.0.7
 
 - Add logout to module tests, always run front_page/front-page test
