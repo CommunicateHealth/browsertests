@@ -29,7 +29,6 @@ module.exports.test = function (options, webdriver, driver, baseUrl) {
     logout = require('./logout.js'),
     modules = require('./modules.js'),
     dblog = require('./dblog.js');
-  var tests;
   console.log(
     "\x1b[7m%s\x1b[0m",
     "Testing module updates"
@@ -38,9 +37,10 @@ module.exports.test = function (options, webdriver, driver, baseUrl) {
     .then(() => dblog.test(options, webdriver, driver, baseUrl, true))
     .then(() => modules.test(options, webdriver, driver, baseUrl))
     .then((moduleList) => {
+      var promise = Promise.resolve(),
+        tests;
       options.moduleList = moduleList;
       tests = resolveTests(options)
-      var promise = Promise.resolve();
       tests.forEach((test) => {
         promise = promise
           .then(() => test.exec.test(options, webdriver, driver, baseUrl))
@@ -57,7 +57,7 @@ function resolveTests(options) {
     allowedTests = options.moduleList || [],
     tests = [];
   if (options.core || options.php) {
-    tests.push(require("./core_status.js"))
+    tests.push({name: "core", exec: require("./core_status.js")});
   }
   if (options.modules) {
     allowedTests = (options.modules).split(',');
