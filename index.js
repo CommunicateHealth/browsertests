@@ -12,7 +12,10 @@ const webdriver = require('selenium-webdriver'),
   loggingPrefs = new webdriver.logging.Preferences().setLevel(logging.Type.BROWSER, logging.Level.WARNING),
   chrome = require('selenium-webdriver/chrome')
   chromeOptionsArgs = options.debug ? [] : ['--headless','--no-sandbox', '--disable-dev-shm-usage'],
-  chromeOptions = new chrome.Options().addArguments(chromeOptionsArgs).setLoggingPrefs(loggingPrefs),
+  chromeOptions = new chrome.Options()
+    .setPageLoadStrategy('eager')
+    .addArguments(chromeOptionsArgs)
+    .setLoggingPrefs(loggingPrefs),
   driver = new webdriver.Builder()
     .forBrowser('chrome')
     .setChromeOptions(chromeOptions)
