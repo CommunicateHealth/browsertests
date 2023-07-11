@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0
+
+- Change to 'eager' page load strategy to avoid timeouts from blocked dependencies
+
 ## 1.0.8
 
 - Fix error when running core and php version checks
