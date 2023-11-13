@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+- Adjustments to handle different site configurations
+
 ## 1.1.0
 
 - Change to 'eager' page load strategy to avoid timeouts from blocked dependencies
