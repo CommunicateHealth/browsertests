@@ -107,11 +107,15 @@ module.exports.checkForGTM = function(webdriver, driver, options) {
       }, Promise.resolve());
     })
     .then(() => {
-      if(!gotNoScript) {
+      if(!gotNoScript && config.gtmOptions.noscript !== false) {
         return new Promise((_, reject)=>reject('GTM noscript Iframe missing.'));
       }
     })
-    .then(() => console.log("GTM noscript Iframe exists."))
+    .then(() => {
+      if (config.gtmOptions.noscript !== false) {
+        console.log("GTM noscript Iframe exists.");
+      }
+    })
 
     // Look for GTM script
     .then(() => driver.findElements(By.css(scriptSelector)))

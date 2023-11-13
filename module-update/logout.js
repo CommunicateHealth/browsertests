@@ -15,7 +15,10 @@ module.exports.test = function(options, webdriver, driver, baseUrl) {
   }
 
   // Load the page
-  console.log("Logging out of Drupal at " + options.url + path);
+  console.log(
+    "\n\x1b[33m%s\x1b[0m",
+    "Logging out of Drupal at " + options.url + path
+  );
   return driver.get(baseUrl + path)
 
       // Get the title and test that it matches our expectation.

@@ -26,9 +26,20 @@ module.exports.test = function(options, webdriver, driver, baseUrl) {
         return new Promise((resolve, reject) => reject('Error: Got wrong title for page at ' + options.url + path + '!'));
       }
     })
+    .then(() => driver.findElements(By.css('a[href="/admin/config/search/simplesitemap/variants/add"]')))
+    .then((elements) => {
+      if (elements.length === 2) {
+        console.log("No sitemaps defined.");
+      } else {
+        return regenerate();
+      }
+    })
+    .then(() => console.log("Done testing Simple Sitemap"));
+}
 
-    // Click on rebuild queue button
-    .then(() => driver.findElement(By.id('edit-regenerate-submit')))
+function regenerate() {
+  // Click on rebuild queue button
+  return driver.findElement(By.id('edit-regenerate-submit'))
     .then((element) => test_utils.clickAndWaitForReload(webdriver, driver, element))
 
     // Stay on the Generating XML sitemaps page for a bit
@@ -42,9 +53,7 @@ module.exports.test = function(options, webdriver, driver, baseUrl) {
       if (sitemapEntries.length < config.testParams.minSitemapEntries) {
         return new Promise((resolve, reject) => reject('Error: Expected at least ' + config.testParams.minSitemapEntries + ' entries!'));
       }
-    })
-
-    .then(() => console.log("Done testing Simple Sitemap"));
+    });
 }
 
 function waitForBatchToFinish(webdriver, driver, test_utils, titleText = "", progressText = "", tries = 100) {
