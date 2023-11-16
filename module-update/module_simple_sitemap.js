@@ -31,13 +31,15 @@ module.exports.test = function(options, webdriver, driver, baseUrl) {
       if (elements.length === 2) {
         console.log("No sitemaps defined.");
       } else {
-        return regenerate();
+        return regenerate(webdriver, driver, baseUrl, config);
       }
     })
     .then(() => console.log("Done testing Simple Sitemap"));
 }
 
-function regenerate() {
+function regenerate(webdriver, driver, baseUrl, config) {
+  const By = webdriver.By,
+    test_utils = require('../test-utils.js');
   // Click on rebuild queue button
   return driver.findElement(By.id('edit-regenerate-submit'))
     .then((element) => test_utils.clickAndWaitForReload(webdriver, driver, element))
