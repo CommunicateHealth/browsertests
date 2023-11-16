@@ -2,6 +2,10 @@
 
 ## 1.1.1
 
+- Fix bug introduced in 1.1.1
+
+## 1.1.1
+
 - Adjustments to handle different site configurations
 
 ## 1.1.0
