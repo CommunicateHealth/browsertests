@@ -41,17 +41,22 @@ driver.manage().window().setRect({height:768,width:1024})
         // Set the window size
         .then(() => driver.manage().window().setRect({height:768,width:1280}))
         // Run the test
-        .then(() => test.obj.test(options, webdriver, driver, baseUrl));
+        .then(() => test.obj.test(options, webdriver, driver, baseUrl))
+        // If return new Promise((_,reject).reject(...)) encountered, jump to here.
+        .catch((err) => {
+          test_utils.logError(err);
+        });
     }, Promise.resolve());
   })
 
   // Indicate successful run.
-  .then(() => console.log("\n\x1b[32m%s\x1b[0m", "Done tests"))
-
-  // If return new Promise((_,reject).reject(...)) encountered, jump to here.
-  .catch((err) => {
-    console.error("\n\x1b[31m\x1b[7m%s\x1b[0m", "Caught error:", err);
-    process.exitCode = 1;
+  .then(() => {
+    if (process.exitCode === 1) {
+      console.error("\n\x1b[31m\x1b[7m%s\x1b[0m", "Encountered " + process.exitCode + " Error.");
+    } else if (process.exitCode > 1) {
+      console.error("\n\x1b[31m\x1b[7m%s\x1b[0m", "Encountered " + process.exitCode + " Errors.");
+    }
+    console.log("\n\x1b[32m%s\x1b[0m", "Done tests")
   })
 
   // Always run this clean-up code.

@@ -13,22 +13,46 @@ module.exports.reloadIf403 = function(webdriver, driver, tries=8, retryWait=1000
             .then(() => driver.navigate().refresh())
             .then(() => module.exports.reloadIf403(webdriver, driver, tries - 1, retryWait))
         }
-        return new Promise((_, reject)=>reject("Error: Too many 403 Forbidden reponses."));
+        return module.exports.throwError("Error: Too many 403 Forbidden reponses.");
       }
     });
 }
 
+// Log an error.
+module.exports.logError = function(err) {
+  console.error("\n\x1b[31m\x1b[7m%s\x1b[0m", "Caught error:", err);
+  process.exitCode = (process.exitCode ?? 0) + 1;
+}
+
+// Throw an error. Should be returned in a promise.
+module.exports.throwError = function(err) {
+  return new Promise((_, reject)=>reject(err));
+}
+
 // Look for a variety of errors
 module.exports.checkForErrors = function(webdriver, driver, options) {
-  var pathname;
+  var pathname,
+    errorCount = process.exitCode ?? 0;
 
   return driver.getCurrentUrl()
     .then(currentUrl => pathname = (new URL(currentUrl)).pathname)
     .then(() => module.exports.checkFor200Response(webdriver, driver, options, pathname))
     .then(() => module.exports.inspectH1(webdriver, driver))
     .then(() => module.exports.checkForGTM(webdriver, driver))
+    .then(() => {
+      if (options.accessibility) {
+        return module.exports.checkAccessibility(webdriver, driver, options);
+      }
+    })
     .then(() => module.exports.checkForConsoleErrors(webdriver, driver, options))
-    .then(() => console.log("No errors on path " + pathname));
+    .then(() => {
+      errorCount = (process.exitCode ?? 0) - errorCount;
+      if (errorCount === 0) {
+        console.log("No errors on path " + pathname);
+      } else {
+        console.warn("\x1b[33m%s\x1b[0m", errorCount + " error" + (errorCount > 1 ? "s" : "") + " on path " + pathname);
+      }
+    });
 }
 
 // Look for any warnings or errors
@@ -55,8 +79,7 @@ module.exports.checkForConsoleErrors = function(webdriver, driver, options) {
           console.log("[WARNING] Console errors.");
         }
         else if (gotErrors && options.strict) {
-          console.log("Console errors.");
-          return new Promise((_, reject)=>reject("Error: Console errors."));
+          return module.exports.throwError("Error: Console errors.");
         }
         else {
           console.log("No console errors.");
@@ -68,7 +91,7 @@ module.exports.checkForConsoleErrors = function(webdriver, driver, options) {
 module.exports.checkFor200Response = function(webdriver, driver, options, pathname) {
   return  module.exports.httpGetStatus(webdriver, driver, options, pathname)
     .then((responseCode) => {
-      if (responseCode >= 300) return new Promise((_, reject)=>reject("Invalid response code received: " + responseCode));
+      if (responseCode >= 300) return module.exports.throwError("Invalid response code received: " + responseCode);
       console.log("Recieved response code " + responseCode);
     })
 }
@@ -78,7 +101,7 @@ module.exports.inspectH1 = function(webdriver, driver, options) {
 
   return  driver.findElements(By.css("h1"))
     .then((elements) => {
-      if (elements.length != 1) return new Promise((_, reject)=>reject("Incorrect # of h1's enmcountered: " + elements.length));
+      if (elements.length != 1) return module.exports.throwError("Incorrect # of h1's enmcountered: " + elements.length);
       console.log("One h1 element encountered.");
     })
 }
@@ -108,7 +131,7 @@ module.exports.checkForGTM = function(webdriver, driver, options) {
     })
     .then(() => {
       if(!gotNoScript && config.gtmOptions.noscript !== false) {
-        return new Promise((_, reject)=>reject('GTM noscript Iframe missing.'));
+        return module.exports.throwError('GTM noscript Iframe missing.');
       }
     })
     .then(() => {
@@ -121,10 +144,44 @@ module.exports.checkForGTM = function(webdriver, driver, options) {
     .then(() => driver.findElements(By.css(scriptSelector)))
     .then((gtmScripts) => {
       if (gtmScripts.length == 0) {
-        return new Promise((_, reject)=>reject('GTM script missing.'));
+        return new module.exports.throwError('GTM script missing.');
       }
     })
     .then(() => console.log("GTM script exists."))
+}
+
+module.exports.checkAccessibility = function(webdriver, driver, options) {
+  const { AxeBuilder } = require('@axe-core/webdriverjs');
+  console.log("Checking accessibility.");
+  return new AxeBuilder(driver)
+    .analyze()
+    .then(results => {
+      if (results.violations) {
+        results.violations.forEach(result => {
+          result.nodes.forEach((node, index) => {
+            if ((options.accessibilityIgnoteTargets ?? []).some((ignoreTarget) => {
+              return node.target.includes(ignoreTarget);
+            })) {
+              // if the node's target matches one of the accessibilityIgnoteTargets, then set it for ignoring.
+              result.nodes[index] = null;
+            } else {
+              result.nodes[index] = {
+                html: node.html,
+                target: node.target,
+              }
+            }
+          });
+          // Remove ignored nodes.
+          result.nodes = result.nodes.filter((node) => node !== null);
+          if (result.nodes.length === 0) {
+            return;
+          }
+          // Reduce verbosity.
+          delete result.tags;
+          module.exports.logError("Axe violation" + JSON.stringify(result, null, 2));
+        });
+      }
+    });
 }
 
 module.exports.getKeyByValue = function(object, value) {
@@ -188,8 +245,9 @@ module.exports.httpGet = function(url) {
 }
 
 // Coverts command line parameters and options to options object
-module.exports.process_options = function(args, config) {
-  var options = {}, parameterIndex=0;
+module.exports.process_options = function(args, config)  {
+  var options = config.defaultOptions ?? {},
+      parameterIndex = 0;
   args.forEach(function(arg) {
     var argParts = arg.split("=");
     if (argParts.length > 1) {
@@ -380,11 +438,10 @@ module.exports.waitForDisplayedAndEnabled = function(driver, element, delay=3000
 
 // Read (optionally nested) sitemap.xml file(s)
 module.exports.readSitemap = function (webdriver, driver, baseUrl, path = '/sitemap.xml') {
-  const test_utils = require('./test-utils'),
-    xmlRegex = /<loc>([^<]+)<\/loc>[\s\S]*?<lastmod>([^<]+)<\/lastmod>/gi;
+  const xmlRegex = /<loc>([^<]+)<\/loc>[\s\S]*?<lastmod>([^<]+)<\/lastmod>/gi;
   var mapEntries = [];
   // Load the page, which either contains a sitemapindex section or a urlset section
-  return test_utils.httpGet(baseUrl + path)
+  return module.exports.httpGet(baseUrl + path)
     .then((xmlBuffer) => {
       var xml = xmlBuffer.toString('utf-8'),
         entryNum = 1;
