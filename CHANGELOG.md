@@ -1,6 +1,11 @@
 # Changelog
 
-## 1.1.1
+## 1.2.0
+
+- Support Axe Dev Tools testing (via options.accessibility)
+- Continue testing after encoutering errors
+
+## 1.1.2
 
 - Fix bug introduced in 1.1.1
 
