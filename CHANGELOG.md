@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0
+
+- Support jumplink testing (via options.jumplinks)
+- Better resolve tests in subdirectories
+
 ## 1.2.0
 
 - Support Axe Dev Tools testing (via options.accessibility)
