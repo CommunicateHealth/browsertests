@@ -106,9 +106,10 @@ function resolveTests(options) {
         }
         if (fs.existsSync(dir + "/" + filenameBase + ".js")) {
           test = require(dir + "/" + filenameBase + ".js");
-        } else if (fs.existsSync(__dirname + "/" + filenameBase + "/index.js")) {
+        } else if (fs.existsSync(dir + "/" + filenameBase + "/index.js")) {
           test = require(dir + "/" + filenameBase + "/index.js");
         } else {
+          console.error("No tests in " + filenameBase);
           return;
         }
         if (!options.help && (test.testSpec && test.testSpec.require)) {

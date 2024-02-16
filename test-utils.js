@@ -40,6 +40,11 @@ module.exports.checkForErrors = function(webdriver, driver, options) {
     .then(() => module.exports.inspectH1(webdriver, driver))
     .then(() => module.exports.checkForGTM(webdriver, driver))
     .then(() => {
+      if (options.jumplinks) {
+        return module.exports.checkJumpLinks(webdriver, driver, options);
+      }
+    })
+    .then(() => {
       if (options.accessibility) {
         return module.exports.checkAccessibility(webdriver, driver, options);
       }
@@ -148,6 +153,34 @@ module.exports.checkForGTM = function(webdriver, driver, options) {
       }
     })
     .then(() => console.log("GTM script exists."))
+}
+
+module.exports.checkJumpLinks = function(webdriver, driver, options) {
+  const By = webdriver.By;
+
+  console.log("Checking internal jump links.");
+  return driver.findElements(By.css('a[href^="#"]:not([href$="#"]'))
+    .then((jumplinks) => {
+      var promise = Promise.resolve();
+      jumplinks.forEach(jumplink => {
+        promise = promise.then(() => jumplink.getAttribute("href"))
+          .then((href) => {
+            var id = decodeURIComponent(href).replace(/.*#/, "");
+            if (id === "top") {
+              return;
+            }
+            return driver.findElements(By.css('*[id="' + id + '"]'))
+              .then((elements) => {
+                if (elements.length === 0) {
+                  module.exports.logError("Missing target for jumplink #" + id);
+                } else if (elements.length > 1) {
+                  module.exports.logError("Multiple targets for jumplink #" + id);
+                }
+              });
+          });
+      });
+      return promise;
+    });
 }
 
 module.exports.checkAccessibility = function(webdriver, driver, options) {
