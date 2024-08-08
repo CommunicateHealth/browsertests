@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.0
+
+- Updates Selenium and axe-core to latest versions
+
 ## 1.3.0
 
 - Support jumplink testing (via options.jumplinks)
