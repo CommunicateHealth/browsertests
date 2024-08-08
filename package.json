@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/CommunicateHealth/browsertests#readme",
   "dependencies": {
-    "@axe-core/webdriverjs": "^4.8.1",
-    "selenium-webdriver": "^4.8.2"
+    "@axe-core/webdriverjs": "^4.9.1",
+    "selenium-webdriver": "^4.23.0"
   }
 }
