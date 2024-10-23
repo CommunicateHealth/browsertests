@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.0
+
+- Accommodates '--crawlDelay=##' option to mimic robots.txt crawlDelay setting
+
 ## 1.4.0
 
 - Updates Selenium and axe-core to latest versions
