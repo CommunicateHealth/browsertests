@@ -248,7 +248,7 @@ function waitForStatus(driver, tries) {
 
 // Returs a buffer. Use .toString('utf-8') to get textcod
 module.exports.httpGet = function(url) {
-  return new Promise((resolve, reject) => {
+  const promise = new Promise((resolve, reject) => {
     const http = require('http'),
       https = require('https');
 
@@ -275,6 +275,8 @@ module.exports.httpGet = function(url) {
       reject(err);
     });
   });
+  return driver.sleep((module.exports.options.crawlDelay ?? 0) * 1000)
+    .then(() => promise);
 }
 
 // Coverts command line parameters and options to options object
@@ -379,7 +381,8 @@ module.exports.bustCacheUrl = function (urlString) {
 
 // Clicks an element and waits for a new page to load
 module.exports.clickAndWaitForReload = function (webdriver, driver, element, tries = 2) {
-  return element.click()
+  return driver.sleep((module.exports.options.crawlDelay ?? 0) * 1000)
+    .then(() => element.click())
     .then(() => module.exports.waitForReload(webdriver, driver, element))
     .then((reloaded) => {
       if (!reloaded && tries > 1) {
@@ -397,7 +400,8 @@ module.exports.clickAndWaitForReload = function (webdriver, driver, element, tri
 module.exports.getAndWaitForReload = function (webdriver, driver, url, tries = 2) {
   const By = webdriver.By;
   var body;
-  return driver.findElement(By.css('body'))
+  return driver.sleep((module.exports.options.crawlDelay ?? 0) * 1000)
+    .then(() => driver.findElement(By.css('body')))
     .then((_body) => body = _body)
     .then(() => driver.get(url))
     .then(() => module.exports.waitForReload(webdriver, driver, body))
@@ -479,7 +483,7 @@ module.exports.readSitemap = function (webdriver, driver, baseUrl, path = '/site
       var xml = xmlBuffer.toString('utf-8'),
         entryNum = 1;
       var indexSection = xml.match(/<sitemapindex[^>]+>[\s\S]*<\/sitemapindex>/g);
-      if (indexSection) {
+      if (indexSection && !path.includes('page=')) {
         var promise = Promise.resolve();
         while ((match = xmlRegex.exec(indexSection[0])) !== null) {
           let subUrl = new URL(match[1]),
@@ -506,3 +510,5 @@ module.exports.readSitemap = function (webdriver, driver, baseUrl, path = '/site
       return mapEntries;
     });
 }
+
+module.exports.options = {};

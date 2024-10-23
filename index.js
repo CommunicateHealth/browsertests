@@ -22,6 +22,7 @@ const webdriver = require('selenium-webdriver'),
     .build(),
   tests = resolveTests(options);
 
+test_utils.options = options;
 if (options.help) {
   showHelp(tests, options);
   return;
@@ -35,9 +36,15 @@ driver.manage().window().setRect({height:768,width:1024})
 
   // Run the tests on each page
   .then(() => {
-    return tests.reduce((promise, test) => {
+    return tests.reduce((promise, test, index) => {
       return promise
         .then(() => console.log("\x1b[32m%s\x1b[0m", "Testing " + test.name))
+        // Pause if necessary
+        .then(() => {
+          if (index > 0) {
+            return driver.sleep(1000 * (options.crawlDelay ?? 0));
+          }
+        })
         // Set the window size
         .then(() => driver.manage().window().setRect({height:768,width:1280}))
         // Run the test
